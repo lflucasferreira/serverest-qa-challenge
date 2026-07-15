@@ -1,4 +1,3 @@
-const LoginPage = require('../../pages/LoginPage');
 const HomePage = require('../../pages/HomePage');
 const CartPage = require('../../pages/CartPage');
 
@@ -13,15 +12,18 @@ describe('UI - Lista de compras', () => {
       user = createdUser;
     });
 
-    cy.apiCreateAdmin().then((createdAdmin) => {
-      admin = createdAdmin;
-      cy.apiLogin(admin.email, admin.password).then((response) => {
+    cy.apiCreateAdmin()
+      .then((createdAdmin) => {
+        admin = createdAdmin;
+        return cy.apiLogin(admin.email, admin.password);
+      })
+      .then((response) => {
         adminToken = response.body.authorization;
-        cy.apiCreateProduct(adminToken).then((createdProduct) => {
-          product = createdProduct;
-        });
+        return cy.apiCreateProduct(adminToken);
+      })
+      .then((createdProduct) => {
+        product = createdProduct;
       });
-    });
   });
 
   after(() => {
@@ -31,7 +33,7 @@ describe('UI - Lista de compras', () => {
   });
 
   it('adiciona um produto pesquisado à lista de compras', () => {
-    LoginPage.visit().login(user.email, user.password);
+    cy.loginBySession(user.email, user.password);
     cy.url().should('include', '/home');
 
     HomePage.search(product.nome);
@@ -44,7 +46,7 @@ describe('UI - Lista de compras', () => {
   });
 
   it('incrementa a quantidade do produto na lista de compras', () => {
-    LoginPage.visit().login(user.email, user.password);
+    cy.loginBySession(user.email, user.password);
     HomePage.search(product.nome);
     HomePage.addProductToListByName(product.nome);
 

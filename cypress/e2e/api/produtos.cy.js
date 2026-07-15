@@ -7,12 +7,14 @@ describe('API - Produtos (rota administrativa)', () => {
   let adminToken;
 
   before(() => {
-    cy.apiCreateAdmin().then((admin) => {
-      createdUserIds.push(admin._id);
-      cy.apiLogin(admin.email, admin.password).then((response) => {
+    cy.apiCreateAdmin()
+      .then((admin) => {
+        createdUserIds.push(admin._id);
+        return cy.apiLogin(admin.email, admin.password);
+      })
+      .then((response) => {
         adminToken = response.body.authorization;
       });
-    });
   });
 
   after(() => {
@@ -64,21 +66,23 @@ describe('API - Produtos (rota administrativa)', () => {
   });
 
   it('rejeita cadastro de produto por usuário não administrador', () => {
-    cy.apiCreateUser().then((user) => {
-      createdUserIds.push(user._id);
-
-      cy.apiLogin(user.email, user.password).then((loginResponse) => {
+    cy.apiCreateUser()
+      .then((user) => {
+        createdUserIds.push(user._id);
+        return cy.apiLogin(user.email, user.password);
+      })
+      .then((loginResponse) =>
         cy.request({
           method: 'POST',
           url: `${apiUrl}/produtos`,
           headers: { Authorization: loginResponse.body.authorization },
           body: buildProduct(),
           failOnStatusCode: false,
-        }).then((response) => {
-          expect(response.status).to.eq(403);
-          expect(response.body.message).to.eq('Rota exclusiva para administradores');
-        });
+        }),
+      )
+      .then((response) => {
+        expect(response.status).to.eq(403);
+        expect(response.body.message).to.eq('Rota exclusiva para administradores');
       });
-    });
   });
 });

@@ -54,3 +54,28 @@ Cypress.Commands.add('apiDeleteProduct', (id, token) => {
     failOnStatusCode: false,
   });
 });
+
+/**
+ * Autentica via API e restaura a sessão (localStorage) entre testes com cy.session,
+ * evitando repetir o formulário de login em specs onde login não é o comportamento sob teste.
+ */
+Cypress.Commands.add('loginBySession', (email, password) => {
+  cy.session(
+    email,
+    () => {
+      cy.apiLogin(email, password).then((response) => {
+        cy.visit('/login');
+        cy.window().then((win) => {
+          win.localStorage.setItem('serverest/userEmail', email);
+          win.localStorage.setItem('serverest/userToken', response.body.authorization);
+        });
+      });
+    },
+    {
+      validate: () => {
+        cy.window().its('localStorage').invoke('getItem', 'serverest/userToken').should('exist');
+      },
+    },
+  );
+  cy.visit('/home');
+});
