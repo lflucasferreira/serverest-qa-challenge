@@ -8,8 +8,10 @@ module.exports = defineConfig({
   screenshotOnRunFailure: true,
   defaultCommandTimeout: TIMEOUTS.DEFAULT_COMMAND,
   requestTimeout: TIMEOUTS.API_REQUEST,
+  // Sem retries em nenhum modo: um teste que só passa na segunda tentativa é flakiness real,
+  // não deve ser mascarada por um retry automático - precisa falhar visivelmente e ser investigada.
   retries: {
-    runMode: 2,
+    runMode: 0,
     openMode: 0,
   },
   reporter: 'cypress-mochawesome-reporter',
