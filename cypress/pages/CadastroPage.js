@@ -34,7 +34,7 @@ class CadastroPage {
 
   cadastrar({ nome, email, password, administrador = false }) {
     this.fillNome(nome).fillEmail(email).fillPassword(password);
-    if (administrador) this.toggleAdministrador();
+    if (administrador === true || administrador === 'true') this.toggleAdministrador();
     this.submit();
     return this;
   }
