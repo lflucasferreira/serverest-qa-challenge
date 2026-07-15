@@ -9,14 +9,10 @@ describe('API - Produtos (rota administrativa)', () => {
   let adminToken;
 
   before(() => {
-    cy.apiCreateAdmin()
-      .then((admin) => {
-        createdUserIds.push(admin._id);
-        return cy.apiLogin(admin.email, admin.password);
-      })
-      .then((response) => {
-        adminToken = response.body.authorization;
-      });
+    cy.apiCreateAdminWithToken().then(({ admin, token }) => {
+      createdUserIds.push(admin._id);
+      adminToken = token;
+    });
   });
 
   after(() => {

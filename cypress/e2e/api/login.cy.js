@@ -1,25 +1,16 @@
 const { HTTP_STATUS } = require('../../support/@enums/httpStatus');
 const { TIMEOUTS } = require('../../support/@enums/timeouts');
+const { useTestUser } = require('../../support/utils/testLifecycle');
 
 describe('API - Login', () => {
   const apiUrl = Cypress.env('apiUrl');
-  let user;
-
-  before(() => {
-    cy.apiCreateUser().then((createdUser) => {
-      user = createdUser;
-    });
-  });
-
-  after(() => {
-    cy.apiDeleteUser(user?._id);
-  });
+  const testUser = useTestUser();
 
   it('autentica com sucesso e retorna um token de autorização', { tags: '@smoke' }, () => {
     cy.step('POST /login e validação do contrato de sucesso');
     cy.request('POST', `${apiUrl}/login`, {
-      email: user.email,
-      password: user.password,
+      email: testUser.user.email,
+      password: testUser.user.password,
     }).then((response) => {
       expect(response.status).to.eq(HTTP_STATUS.OK);
       expect(response.duration).to.be.lessThan(TIMEOUTS.API_RESPONSE_SLA_MS);
@@ -32,7 +23,7 @@ describe('API - Login', () => {
     cy.request({
       method: 'POST',
       url: `${apiUrl}/login`,
-      body: { email: user.email, password: 'senha-incorreta' },
+      body: { email: testUser.user.email, password: 'senha-incorreta' },
       failOnStatusCode: false,
     }).then((response) => {
       expect(response.status).to.eq(HTTP_STATUS.UNAUTHORIZED);

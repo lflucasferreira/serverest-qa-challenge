@@ -26,6 +26,11 @@ declare namespace Cypress {
     /** Atalho para apiCreateUser com administrador: 'true'. */
     apiCreateAdmin(overrides?: Partial<ServerestUser>): Chainable<ServerestUser>;
 
+    /** Cria um administrador e já autentica, retornando { admin, token }. */
+    apiCreateAdminWithToken(
+      overrides?: Partial<ServerestUser>,
+    ): Chainable<{ admin: ServerestUser; token: string }>;
+
     /** POST /login via API. Não falha o teste em credenciais inválidas (failOnStatusCode: false). */
     apiLogin(email: string, password: string): Chainable<Cypress.Response<unknown>>;
 
