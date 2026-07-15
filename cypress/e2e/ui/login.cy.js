@@ -47,4 +47,22 @@ describe('UI - Login', () => {
     LoginPage.getErrorAlert().should('contain.text', 'Email e/ou senha inválidos');
     cy.url().should('include', '/login');
   });
+
+  it('exibe mensagens de campo obrigatório ao submeter o login em branco', () => {
+    cy.intercept('POST', `${apiUrl}/login`).as('login');
+
+    LoginPage.visit().submit();
+
+    cy.wait('@login').then(({ response }) => {
+      expect(response.statusCode).to.eq(400);
+      expect(response.body).to.deep.equal({
+        email: 'email é obrigatório',
+        password: 'password é obrigatório',
+      });
+    });
+
+    cy.contains('.alert', 'Email é obrigatório').should('be.visible');
+    cy.contains('.alert', 'Password é obrigatório').should('be.visible');
+    cy.url().should('include', '/login');
+  });
 });

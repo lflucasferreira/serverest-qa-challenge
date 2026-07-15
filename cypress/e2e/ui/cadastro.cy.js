@@ -55,4 +55,24 @@ describe('UI - Cadastro de usuário', () => {
       cy.url().should('include', '/cadastrarusuarios');
     });
   });
+
+  it('exibe mensagens de campo obrigatório ao submeter o cadastro em branco', () => {
+    cy.intercept('POST', `${apiUrl}/usuarios`).as('cadastrarUsuario');
+
+    CadastroPage.visit().submit();
+
+    cy.wait('@cadastrarUsuario').then(({ response }) => {
+      expect(response.statusCode).to.eq(400);
+      expect(response.body).to.deep.equal({
+        nome: 'nome é obrigatório',
+        email: 'email é obrigatório',
+        password: 'password é obrigatório',
+      });
+    });
+
+    cy.contains('.alert', 'Nome é obrigatório').should('be.visible');
+    cy.contains('.alert', 'Email é obrigatório').should('be.visible');
+    cy.contains('.alert', 'Password é obrigatório').should('be.visible');
+    cy.url().should('include', '/cadastrarusuarios');
+  });
 });
