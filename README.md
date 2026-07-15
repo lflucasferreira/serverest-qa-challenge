@@ -14,6 +14,7 @@ Desenvolvido como desafio técnico de processo seletivo.
 - [cypress-axe](https://github.com/component-driven/cypress-axe) — auditoria automatizada de acessibilidade (axe-core)
 - [@bahmutov/cy-grep](https://github.com/bahmutov/cy-grep) — filtragem da suíte por tags (`@smoke`/`@regression`/`@security`)
 - [cypress-mochawesome-reporter](https://github.com/LironEr/cypress-mochawesome-reporter) — relatório HTML com evidências (screenshots/vídeos embutidos)
+- [Cypress Cloud](https://cloud.cypress.io) — histórico de execuções e detecção de flakiness (gravação em push/PR)
 - ESLint (`eslint-plugin-cypress`) + Prettier — padronização e qualidade de código
 - Husky + lint-staged — lint automático no pre-commit
 - GitHub Actions + Dependabot — CI/CD e atualização de dependências
@@ -177,10 +178,14 @@ Investigando o comportamento real da aplicação para desenhar os testes, encont
 O workflow [`.github/workflows/e2e.yml`](.github/workflows/e2e.yml) roda em `push`/`pull_request` para `main`, manualmente (`workflow_dispatch`) e **a cada hora, em ponto** (`schedule: cron: '0 * * * *'`) como monitoramento contínuo — como o ServeRest é uma aplicação de terceiros, isso detecta mudanças de comportamento na app mesmo sem nenhum push nosso. Um `concurrency` group cancela runs obsoletos quando há pushes seguidos na mesma branch/PR.
 
 1. **lint** — ESLint + `prettier --check` sobre todo o projeto.
-2. **test** (Cypress Tests) — roda `npm test` (suíte completa: API, UI **e segurança**, sem filtro de tags) contra os ambientes reais do desafio e publica como artefatos do Actions: relatório Mochawesome único com tudo, vídeos (sempre) e screenshots (em caso de falha).
+2. **test** (Cypress Tests) — roda a suíte completa (API, UI **e segurança**, sem filtro de tags) contra os ambientes reais do desafio e publica como artefatos do Actions: relatório Mochawesome único com tudo, vídeos (sempre) e screenshots (em caso de falha).
 3. **publish-report** — em push para `main` ou em execuções agendadas, publica esse relatório único no GitHub Pages.
 
 O binário do Cypress é cacheado, chaveado pelo lockfile.
+
+### Cypress Cloud
+
+O projeto está associado a um projeto no [Cypress Cloud](https://cloud.cypress.io) (`projectId: '66q5cs'` em `cypress.config.js`), usado para histórico de execuções e detecção de flakiness ao longo do tempo — complementar à decisão de manter `retries: 0` (um teste instável precisa aparecer como falha, e o Cypress Cloud ajuda a enxergar o padrão histórico dessas falhas). A gravação (`--record`) só acontece em `push`/`pull_request` (não no cron horário, para não estourar a cota gratuita) e depende do secret `CYPRESS_RECORD_KEY` estar configurado no repositório; sem ele, o job roda normalmente sem gravar.
 
 ### Como ver as evidências de execução
 

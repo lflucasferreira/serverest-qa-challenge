@@ -53,10 +53,19 @@ jobs:
       - run: npm ci
 
       - name: Run Cypress (API + UI + segurança)
-        run: npm test
+        # Grava no Cypress Cloud apenas em push/PR (não no cron horário, para não estourar a
+        # cota gratuita) e só quando o secret CYPRESS_RECORD_KEY já estiver configurado - sem
+        # ele, roda normalmente sem --record em vez de quebrar o job.
+        run: |
+          if [ "${{ github.event_name }}" != "schedule" ] && [ -n "$CYPRESS_RECORD_KEY" ]; then
+            npx cypress run --record
+          else
+            npx cypress run
+          fi
         env:
           CYPRESS_BASE_URL: https://front.serverest.dev
           CYPRESS_API_URL: https://serverest.dev
+          CYPRESS_RECORD_KEY: ${{ secrets.CYPRESS_RECORD_KEY }}
 
       - name: Upload Mochawesome report
         if: always()

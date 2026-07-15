@@ -3,6 +3,7 @@ const cypressMochawesomeReporterPlugin = require('cypress-mochawesome-reporter/p
 const { TIMEOUTS } = require('./cypress/support/@enums/timeouts');
 
 module.exports = defineConfig({
+  projectId: '66q5cs',
   expose: { grepFilterSpecs: true, grepOmitFiltered: true },
   video: true,
   screenshotOnRunFailure: true,
