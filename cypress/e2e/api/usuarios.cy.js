@@ -1,4 +1,6 @@
 const { buildUser } = require('../../support/utils/dataFactory');
+const { HTTP_STATUS } = require('../../support/@enums/httpStatus');
+const { TIMEOUTS } = require('../../support/@enums/timeouts');
 
 describe('API - Usuários', () => {
   const apiUrl = Cypress.env('apiUrl');
@@ -8,28 +10,34 @@ describe('API - Usuários', () => {
     createdUserIds.forEach((id) => cy.apiDeleteUser(id));
   });
 
-  it('cadastra um usuário com sucesso e confirma a persistência via GET', () => {
-    const user = buildUser();
+  it(
+    'cadastra um usuário com sucesso e confirma a persistência via GET',
+    { tags: '@smoke' },
+    () => {
+      const user = buildUser();
 
-    cy.request('POST', `${apiUrl}/usuarios`, user).then((response) => {
-      expect(response.status).to.eq(201);
-      expect(response.body.message).to.eq('Cadastro realizado com sucesso');
-      expect(response.body._id).to.be.a('string');
+      cy.request('POST', `${apiUrl}/usuarios`, user).then((response) => {
+        expect(response.status).to.eq(HTTP_STATUS.CREATED);
+        expect(response.duration).to.be.lessThan(TIMEOUTS.API_RESPONSE_SLA_MS);
+        expect(response.body.message).to.eq('Cadastro realizado com sucesso');
+        cy.validateJsonSchema(response.body, 'cadastro-sucesso.schema.json');
 
-      createdUserIds.push(response.body._id);
+        createdUserIds.push(response.body._id);
 
-      cy.request('GET', `${apiUrl}/usuarios/${response.body._id}`).then((getResponse) => {
-        expect(getResponse.status).to.eq(200);
-        expect(getResponse.body).to.include({
-          nome: user.nome,
-          email: user.email,
-          administrador: user.administrador,
+        cy.request('GET', `${apiUrl}/usuarios/${response.body._id}`).then((getResponse) => {
+          expect(getResponse.status).to.eq(HTTP_STATUS.OK);
+          expect(getResponse.body).to.include({
+            nome: user.nome,
+            email: user.email,
+            administrador: user.administrador,
+          });
+          cy.validateJsonSchema(getResponse.body, 'usuario.schema.json');
         });
       });
-    });
-  });
+    },
+  );
 
-  it('não permite cadastrar dois usuários com o mesmo e-mail', () => {
+  it('não permite cadastrar dois usuários com o mesmo e-mail', { tags: '@regression' }, () => {
     const user = buildUser();
 
     cy.request('POST', `${apiUrl}/usuarios`, user).then((response) => {
@@ -41,19 +49,19 @@ describe('API - Usuários', () => {
         body: user,
         failOnStatusCode: false,
       }).then((duplicateResponse) => {
-        expect(duplicateResponse.status).to.eq(400);
+        expect(duplicateResponse.status).to.eq(HTTP_STATUS.BAD_REQUEST);
         expect(duplicateResponse.body.message).to.eq('Este email já está sendo usado');
       });
     });
   });
 
-  it('retorna 400 ao buscar um usuário com ID inexistente', () => {
+  it('retorna 400 ao buscar um usuário com ID inexistente', { tags: '@regression' }, () => {
     cy.request({
       method: 'GET',
       url: `${apiUrl}/usuarios/idInexistente123`,
       failOnStatusCode: false,
     }).then((response) => {
-      expect(response.status).to.eq(400);
+      expect(response.status).to.eq(HTTP_STATUS.BAD_REQUEST);
       expect(response.body.message).to.eq('Usuário não encontrado');
     });
   });

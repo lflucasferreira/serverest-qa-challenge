@@ -1,0 +1,9 @@
+{
+  "type": "object",
+  "properties": {
+    "message": { "type": "string" },
+    "_id": { "type": "string", "minLength": 1 }
+  },
+  "required": ["message", "_id"],
+  "additionalProperties": false
+}

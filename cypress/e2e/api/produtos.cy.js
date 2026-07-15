@@ -1,4 +1,6 @@
 const { buildProduct } = require('../../support/utils/dataFactory');
+const { HTTP_STATUS } = require('../../support/@enums/httpStatus');
+const { TIMEOUTS } = require('../../support/@enums/timeouts');
 
 describe('API - Produtos (rota administrativa)', () => {
   const apiUrl = Cypress.env('apiUrl');
@@ -22,19 +24,35 @@ describe('API - Produtos (rota administrativa)', () => {
     createdUserIds.forEach((id) => cy.apiDeleteUser(id));
   });
 
-  it('cadastra um produto com sucesso usando token de administrador', () => {
+  it('cadastra um produto com sucesso usando token de administrador', { tags: '@smoke' }, () => {
     cy.apiCreateProduct(adminToken).then((product) => {
-      expect(product.status).to.eq(201);
+      expect(product.status).to.eq(HTTP_STATUS.CREATED);
       createdProductIds.push(product._id);
+      cy.validateJsonSchema(
+        { message: 'Cadastro realizado com sucesso', _id: product._id },
+        'cadastro-sucesso.schema.json',
+      );
 
       cy.request('GET', `${apiUrl}/produtos/${product._id}`).then((getResponse) => {
-        expect(getResponse.status).to.eq(200);
+        expect(getResponse.status).to.eq(HTTP_STATUS.OK);
         expect(getResponse.body).to.include({ nome: product.nome, preco: product.preco });
       });
     });
   });
 
-  it('não permite cadastrar dois produtos com o mesmo nome', () => {
+  it(
+    'lista os produtos cadastrados respeitando o contrato de resposta',
+    { tags: '@regression' },
+    () => {
+      cy.request('GET', `${apiUrl}/produtos`).then((response) => {
+        expect(response.status).to.eq(HTTP_STATUS.OK);
+        expect(response.duration).to.be.lessThan(TIMEOUTS.API_RESPONSE_SLA_MS);
+        cy.validateJsonSchema(response.body, 'lista-produtos.schema.json');
+      });
+    },
+  );
+
+  it('não permite cadastrar dois produtos com o mesmo nome', { tags: '@regression' }, () => {
     const product = buildProduct();
 
     cy.apiCreateProduct(adminToken, product).then((created) => {
@@ -47,25 +65,25 @@ describe('API - Produtos (rota administrativa)', () => {
         body: product,
         failOnStatusCode: false,
       }).then((duplicateResponse) => {
-        expect(duplicateResponse.status).to.eq(400);
+        expect(duplicateResponse.status).to.eq(HTTP_STATUS.BAD_REQUEST);
         expect(duplicateResponse.body.message).to.eq('Já existe produto com esse nome');
       });
     });
   });
 
-  it('rejeita cadastro de produto sem token de autenticação', () => {
+  it('rejeita cadastro de produto sem token de autenticação', { tags: '@regression' }, () => {
     cy.request({
       method: 'POST',
       url: `${apiUrl}/produtos`,
       body: buildProduct(),
       failOnStatusCode: false,
     }).then((response) => {
-      expect(response.status).to.eq(401);
+      expect(response.status).to.eq(HTTP_STATUS.UNAUTHORIZED);
       expect(response.body.message).to.contain('Token de acesso ausente');
     });
   });
 
-  it('rejeita cadastro de produto por usuário não administrador', () => {
+  it('rejeita cadastro de produto por usuário não administrador', { tags: '@regression' }, () => {
     cy.apiCreateUser()
       .then((user) => {
         createdUserIds.push(user._id);
@@ -81,7 +99,7 @@ describe('API - Produtos (rota administrativa)', () => {
         }),
       )
       .then((response) => {
-        expect(response.status).to.eq(403);
+        expect(response.status).to.eq(HTTP_STATUS.FORBIDDEN);
         expect(response.body.message).to.eq('Rota exclusiva para administradores');
       });
   });

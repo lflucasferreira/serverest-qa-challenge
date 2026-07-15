@@ -1,5 +1,6 @@
 const HomePage = require('../../pages/HomePage');
 const CartPage = require('../../pages/CartPage');
+const { HTTP_STATUS } = require('../../support/@enums/httpStatus');
 
 describe('UI - Lista de compras', () => {
   const apiUrl = Cypress.env('apiUrl');
@@ -33,15 +34,15 @@ describe('UI - Lista de compras', () => {
     cy.apiDeleteUser(admin?._id);
   });
 
-  it('adiciona um produto pesquisado à lista de compras', () => {
+  it('adiciona um produto pesquisado à lista de compras', { tags: '@smoke' }, () => {
     cy.intercept('GET', `${apiUrl}/produtos`).as('listarProdutos');
 
     cy.loginBySession(user.email, user.password);
     cy.url().should('include', '/home');
 
     cy.wait('@listarProdutos').then(({ response }) => {
-      expect(response.statusCode).to.eq(200);
-      expect(response.body.produtos).to.be.an('array');
+      expect(response.statusCode).to.eq(HTTP_STATUS.OK);
+      cy.validateJsonSchema(response.body, 'lista-produtos.schema.json');
     });
 
     cy.intercept('GET', `${apiUrl}/produtos?nome=*`).as('buscarProdutos');
@@ -49,7 +50,7 @@ describe('UI - Lista de compras', () => {
 
     cy.wait('@buscarProdutos').then(({ request, response }) => {
       expect(request.query.nome).to.eq(product.nome);
-      expect(response.statusCode).to.eq(200);
+      expect(response.statusCode).to.eq(HTTP_STATUS.OK);
       expect(response.body.produtos).to.have.length(1);
       expect(response.body.produtos[0]).to.include({ nome: product.nome, preco: product.preco });
     });
@@ -62,7 +63,7 @@ describe('UI - Lista de compras', () => {
     CartPage.getQuantity().should('contain.text', 'Total: 1');
   });
 
-  it('incrementa a quantidade do produto na lista de compras', () => {
+  it('incrementa a quantidade do produto na lista de compras', { tags: '@regression' }, () => {
     cy.loginBySession(user.email, user.password);
     HomePage.search(product.nome);
     HomePage.addProductToListByName(product.nome);

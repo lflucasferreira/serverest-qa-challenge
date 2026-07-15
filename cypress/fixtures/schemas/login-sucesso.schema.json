@@ -1,0 +1,9 @@
+{
+  "type": "object",
+  "properties": {
+    "message": { "type": "string" },
+    "authorization": { "type": "string", "pattern": "^Bearer .+" }
+  },
+  "required": ["message", "authorization"],
+  "additionalProperties": false
+}

@@ -1,0 +1,8 @@
+const TIMEOUTS = Object.freeze({
+  DEFAULT_COMMAND: 8000,
+  API_REQUEST: 10000,
+  SIMULATED_LATENCY_MS: 1500,
+  API_RESPONSE_SLA_MS: 2000,
+});
+
+module.exports = { TIMEOUTS };

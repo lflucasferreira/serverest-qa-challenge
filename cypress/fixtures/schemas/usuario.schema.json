@@ -1,0 +1,12 @@
+{
+  "type": "object",
+  "properties": {
+    "nome": { "type": "string", "minLength": 1 },
+    "email": { "type": "string", "format": "email" },
+    "password": { "type": "string" },
+    "administrador": { "type": "string", "enum": ["true", "false"] },
+    "_id": { "type": "string", "minLength": 1 }
+  },
+  "required": ["nome", "email", "password", "administrador", "_id"],
+  "additionalProperties": false
+}
