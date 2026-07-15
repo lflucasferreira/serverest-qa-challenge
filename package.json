@@ -10,9 +10,16 @@
     "test": "cypress run",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "prepare": "husky"
   },
-  "keywords": ["cypress", "e2e", "api-testing", "serverest"],
+  "keywords": [
+    "cypress",
+    "e2e",
+    "api-testing",
+    "serverest"
+  ],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
@@ -25,6 +32,12 @@
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-cypress": "^6.4.3",
     "globals": "^17.7.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.0.8",
     "prettier": "^3.9.5"
+  },
+  "lint-staged": {
+    "*.js": "eslint --fix",
+    "*.{js,md,yml,json}": "prettier --write"
   }
 }
