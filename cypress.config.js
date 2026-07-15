@@ -1,11 +1,13 @@
 const { defineConfig } = require('cypress');
 const cypressMochawesomeReporterPlugin = require('cypress-mochawesome-reporter/plugin');
+const { TIMEOUTS } = require('./cypress/support/@enums/timeouts');
 
 module.exports = defineConfig({
+  expose: { grepFilterSpecs: true, grepOmitFiltered: true },
   video: true,
   screenshotOnRunFailure: true,
-  defaultCommandTimeout: 8000,
-  requestTimeout: 10000,
+  defaultCommandTimeout: TIMEOUTS.DEFAULT_COMMAND,
+  requestTimeout: TIMEOUTS.API_REQUEST,
   retries: {
     runMode: 2,
     openMode: 0,
@@ -30,6 +32,7 @@ module.exports = defineConfig({
     },
     setupNodeEvents(on, config) {
       cypressMochawesomeReporterPlugin(on);
+      require('@bahmutov/cy-grep/src/plugin')(config);
       return config;
     },
   },
