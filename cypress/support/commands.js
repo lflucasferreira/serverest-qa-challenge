@@ -1,4 +1,5 @@
 const { buildUser, buildProduct } = require('./utils/dataFactory');
+const { KNOWN_EXCLUSIONS } = require('./a11yConfig');
 
 /**
  * Cria um usuário via API (mais rápido e isolado que passar pela UI) e retorna
@@ -78,4 +79,13 @@ Cypress.Commands.add('loginBySession', (email, password) => {
     },
   );
   cy.visit('/home');
+});
+
+/**
+ * Injeta o axe-core e roda a auditoria de acessibilidade da página atual, ignorando as
+ * regras documentadas em a11yConfig.js como dívida pré-existente do ServeRest.
+ */
+Cypress.Commands.add('checkA11yPage', () => {
+  cy.injectAxe();
+  cy.checkA11y(null, KNOWN_EXCLUSIONS);
 });
