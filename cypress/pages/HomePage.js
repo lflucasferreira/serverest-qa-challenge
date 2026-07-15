@@ -24,6 +24,14 @@ class HomePage {
     return cy.contains('.card', name);
   }
 
+  getLoadingIndicator() {
+    return cy.get('.loading-container');
+  }
+
+  getEmptyStateMessage() {
+    return cy.contains('Nenhum produto foi encontrado');
+  }
+
   addProductToListByName(name) {
     this.getProductCardByName(name).within(() => {
       cy.get('[data-testid="adicionarNaLista"]').click();
