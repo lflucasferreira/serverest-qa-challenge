@@ -105,6 +105,39 @@ describe('Security - Controle de acesso e autenticação', { tags: '@security' }
         });
       });
     });
+
+    it('escalação de privilégio: um usuário comum autenticado com o próprio token válido consegue se promover a administrador', () => {
+      // Cenário mais realista que os anteriores: aqui não há token ausente/adulterado - é o
+      // próprio usuário, legitimamente autenticado, alterando seu registro para virar admin.
+      // Como a rota não checa autenticação de forma alguma, isso funciona mesmo sendo um
+      // token genuíno e válido, apenas de um usuário sem privilégio nenhum.
+      cy.apiCreateUser().then((self) => {
+        cy.apiLogin(self.email, self.password).then((loginResponse) => {
+          cy.request({
+            method: 'PUT',
+            url: `${apiUrl}/usuarios/${self._id}`,
+            headers: { Authorization: loginResponse.body.authorization },
+            body: {
+              nome: self.nome,
+              email: self.email,
+              password: self.password,
+              administrador: 'true',
+            },
+          }).then((response) => {
+            expect(response.status).to.eq(HTTP_STATUS.OK);
+          });
+
+          cy.request('GET', `${apiUrl}/usuarios/${self._id}`).then((response) => {
+            expect(
+              response.body.administrador,
+              'usuário comum não deveria conseguir se autopromover a administrador',
+            ).to.eq('true');
+          });
+        });
+
+        cy.apiDeleteUser(self._id);
+      });
+    });
   });
 
   describe('Rotas administrativas de produtos e carrinhos permanecem corretamente protegidas', () => {

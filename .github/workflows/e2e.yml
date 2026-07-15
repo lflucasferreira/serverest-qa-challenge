@@ -6,6 +6,11 @@ on:
   pull_request:
     branches: [main]
   workflow_dispatch:
+  schedule:
+    # Roda a cada hora, cheia (UTC), como monitoramento contínuo: como o ServeRest é uma
+    # aplicação de terceiros, isso detecta mudanças de comportamento na app mesmo sem
+    # nenhum push nosso - não só regressões no nosso próprio código.
+    - cron: '0 * * * *'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -47,11 +52,20 @@ jobs:
 
       - run: npm ci
 
-      - name: Run Cypress (API + UI, exclui cenários @security)
-        run: npm run test:functional
+      - name: Run Cypress (API + UI + segurança)
+        # Grava no Cypress Cloud apenas em push/PR (não no cron horário, para não estourar a
+        # cota gratuita) e só quando o secret CYPRESS_RECORD_KEY já estiver configurado - sem
+        # ele, roda normalmente sem --record em vez de quebrar o job.
+        run: |
+          if [ "${{ github.event_name }}" != "schedule" ] && [ -n "$CYPRESS_RECORD_KEY" ]; then
+            npx cypress run --record
+          else
+            npx cypress run
+          fi
         env:
           CYPRESS_BASE_URL: https://front.serverest.dev
           CYPRESS_API_URL: https://serverest.dev
+          CYPRESS_RECORD_KEY: ${{ secrets.CYPRESS_RECORD_KEY }}
 
       - name: Upload Mochawesome report
         if: always()
@@ -77,60 +91,10 @@ jobs:
           path: cypress/screenshots
           retention-days: 14
 
-  security:
-    name: Security Tests
-    needs: lint
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-
-      - uses: actions/setup-node@v7
-        with:
-          node-version: 22
-          cache: npm
-
-      - name: Cache Cypress binary
-        uses: actions/cache@v6
-        with:
-          path: ~/.cache/Cypress
-          key: cypress-binary-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
-
-      - run: npm ci
-
-      - name: Run Cypress (injeção, controle de acesso e autenticação)
-        run: npm run test:security
-        env:
-          CYPRESS_BASE_URL: https://front.serverest.dev
-          CYPRESS_API_URL: https://serverest.dev
-
-      - name: Upload security report
-        if: always()
-        uses: actions/upload-artifact@v7
-        with:
-          name: security-report
-          path: mochawesome-report
-          retention-days: 14
-
-      - name: Upload security videos
-        if: always()
-        uses: actions/upload-artifact@v7
-        with:
-          name: security-videos
-          path: cypress/videos
-          retention-days: 14
-
-      - name: Upload security screenshots (failures)
-        if: failure()
-        uses: actions/upload-artifact@v7
-        with:
-          name: security-screenshots
-          path: cypress/screenshots
-          retention-days: 14
-
   publish-report:
     name: Publish report to GitHub Pages
     needs: test
-    if: always() && github.ref == 'refs/heads/main' && github.event_name == 'push'
+    if: always() && github.ref == 'refs/heads/main' && contains(fromJSON('["push", "schedule"]'), github.event_name)
     runs-on: ubuntu-latest
     permissions:
       pages: write
