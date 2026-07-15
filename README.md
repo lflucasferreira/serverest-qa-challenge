@@ -2,7 +2,7 @@
 
 [![E2E Test Suite](https://github.com/lflucasferreira/serverest-qa-challenge/actions/workflows/e2e.yml/badge.svg)](https://github.com/lflucasferreira/serverest-qa-challenge/actions/workflows/e2e.yml)
 
-Suíte de testes automatizados com [Cypress](https://www.cypress.io/) para a aplicação [ServeRest](https://serverest.dev), cobrindo E2E de frontend (`https://front.serverest.dev`) e testes de API (`https://serverest.dev`) — 26 cenários no total, além de acessibilidade e responsividade.
+Suíte de testes automatizados com [Cypress](https://www.cypress.io/) para a aplicação [ServeRest](https://serverest.dev), cobrindo E2E de frontend (`https://front.serverest.dev`), testes de API (`https://serverest.dev`) e uma suíte dedicada de **testes de segurança** (injeção e controle de acesso) — 49 cenários no total, além de acessibilidade e responsividade.
 
 Desenvolvido como desafio técnico de processo seletivo.
 
@@ -31,10 +31,13 @@ cypress/
 │   │   ├── resiliencia-api.cy.js   # comportamento do front quando a API falha (500)
 │   │   ├── acessibilidade.cy.js    # axe-core
 │   │   └── responsividade.cy.js    # viewport mobile
-│   └── api/                    # cenários de teste de API
-│       ├── usuarios.cy.js
-│       ├── login.cy.js
-│       └── produtos.cy.js
+│   ├── api/                    # cenários de teste de API
+│   │   ├── usuarios.cy.js
+│   │   ├── login.cy.js
+│   │   └── produtos.cy.js
+│   └── security/                # testes de segurança (tag @security, job dedicado no CI)
+│       ├── injection.cy.js         # SQL/NoSQL injection e XSS
+│       └── auth-bypass.cy.js       # controle de acesso em todas as rotas autenticadas
 ├── pages/                      # Page Objects (camada de interação com a UI)
 │   ├── LoginPage.js
 │   ├── CadastroPage.js
@@ -69,6 +72,12 @@ npm run test:smoke
 
 # apenas cenários @regression
 npm run test:regression
+
+# apenas testes de segurança (injeção, controle de acesso)
+npm run test:security
+
+# suíte funcional completa, excluindo os testes de segurança
+npm run test:functional
 
 # modo interativo (Cypress Test Runner)
 npm run cypress:open
@@ -131,6 +140,23 @@ As URLs padrão já apontam para os ambientes públicos do desafio e podem ser s
 | `login.cy.js`    | Login válido (200 + token), senha incorreta (401) e usuário inexistente (401)                                                                       |
 | `produtos.cy.js` | Cadastro de produto autenticado como administrador (201), listagem, nome duplicado (400), ausência de token (401) e usuário não-administrador (403) |
 
+### Segurança (`cypress/e2e/security`) — 23 cenários
+
+| Spec                | Cenário                                                                                                                                                                                                                 |
+| ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `injection.cy.js`   | SQL injection na senha/e-mail do login, payload SQL armazenado como string literal no cadastro, payload NoSQL rejeitado (400, sem 500), XSS armazenado não é executado ao ser exibido no painel admin                   |
+| `auth-bypass.cy.js` | Mapeia **todas** as rotas autenticadas do swagger e testa cada uma sem token e com token inválido/adulterado - inclui o achado de que `PUT`/`DELETE /usuarios/{id}` não aplicam nenhuma autenticação (ver seção abaixo) |
+
+## Descobertas de segurança
+
+A suíte de segurança (`cypress/e2e/security`, tag `@security`) não é só teste de regressão do que já funciona - a investigação encontrou uma falha real de controle de acesso na API, verificada manualmente e depois convertida em teste automatizado:
+
+> **`PUT /usuarios/{id}` e `DELETE /usuarios/{id}` não exigem nenhuma autenticação.** Qualquer requisição - sem header `Authorization` ou com um token completamente inválido/adulterado - consegue alterar (inclusive promover `administrador: true`) ou excluir **qualquer** conta de usuário, bastando conhecer o `_id`. O `swagger.json` já declara `security: []` para essas duas rotas, e o comportamento foi confirmado na prática. Todas as demais rotas administrativas (`/produtos`, `/carrinhos`) foram testadas do mesmo jeito (sem token e com token inválido) e rejeitam corretamente com 401.
+
+`auth-bypass.cy.js` documenta esse achado como um teste que hoje **passa** (a vulnerabilidade existe e é reproduzida), no mesmo espírito de `resiliencia-api.cy.js`: se a rota um dia passar a exigir autenticação corretamente, é exatamente esse teste que vai quebrar e sinalizar a mudança de comportamento.
+
+`injection.cy.js` cobre SQL injection (rejeitada pela validação de formato/senha, nunca causa bypass ou erro 500), payloads em formato NoSQL (rejeitados com 400 por validação de tipo) e XSS armazenado (persistido como string literal pela API, mas nunca executado pela UI - o front usa React sem `dangerouslySetInnerHTML`, então o payload aparece como texto visível na listagem administrativa em vez de rodar).
+
 ## Descobertas sobre a aplicação (ServeRest)
 
 Investigando o comportamento real da aplicação para desenhar os testes, encontramos alguns pontos que vale documentar (e que viraram parte da cobertura, não obstáculos contornados em silêncio):
@@ -142,15 +168,19 @@ Investigando o comportamento real da aplicação para desenhar os testes, encont
 
 ## CI/CD
 
-O workflow [`.github/workflows/e2e.yml`](.github/workflows/e2e.yml) roda em todo `push`/`pull_request` para `main`:
+O workflow [`.github/workflows/e2e.yml`](.github/workflows/e2e.yml) roda em todo `push`/`pull_request` para `main`, com um `concurrency` group que cancela runs obsoletos quando há pushes seguidos na mesma branch/PR:
 
 1. **lint** — ESLint + `prettier --check` sobre todo o projeto.
-2. **test** — executa a suíte completa (`npm test`) contra os ambientes reais do desafio e publica como artefatos do Actions: relatório Mochawesome, vídeos (sempre) e screenshots (em caso de falha). O binário do Cypress é cacheado entre execuções para acelerar o job.
-3. **publish-report** — em push para `main`, publica o relatório HTML consolidado no GitHub Pages.
+2. **test** (Cypress Tests) — roda `test:functional` (`@smoke` + `@regression`, exclui `@security`) contra os ambientes reais do desafio e publica como artefatos do Actions: relatório Mochawesome, vídeos (sempre) e screenshots (em caso de falha).
+3. **security** (Security Tests) — job separado, roda em paralelo ao `test` (ambos dependem só de `lint`), executando `test:security`. Publica seus próprios artefatos (`security-report`, `security-videos`, `security-screenshots`), segmentados dos artefatos funcionais.
+4. **publish-report** — em push para `main`, publica o relatório Mochawesome do job `test` no GitHub Pages.
+
+O binário do Cypress é cacheado (chaveado pelo lockfile) e compartilhado entre os jobs `test` e `security`.
 
 ### Como ver as evidências de execução
 
-- **GitHub Pages**: relatório da última execução em `main` — https://lflucasferreira.github.io/serverest-qa-challenge/
+- **GitHub Pages**: relatório funcional da última execução em `main` — https://lflucasferreira.github.io/serverest-qa-challenge/
+- Os resultados dos testes de segurança ficam disponíveis como artefato `security-report` na aba _Actions_ de cada execução (não são publicados no Pages, que mantém o foco no relatório funcional).
 - **GitHub Actions**: aba _Actions_ → selecionar o workflow run → seção _Artifacts_ (`mochawesome-report`, `cypress-videos`, `cypress-screenshots`)
 - **Badge** no topo deste README reflete o status da última execução em `main`.
 

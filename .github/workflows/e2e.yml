@@ -47,8 +47,8 @@ jobs:
 
       - run: npm ci
 
-      - name: Run Cypress (API + UI)
-        run: npm test
+      - name: Run Cypress (API + UI, exclui cenários @security)
+        run: npm run test:functional
         env:
           CYPRESS_BASE_URL: https://front.serverest.dev
           CYPRESS_API_URL: https://serverest.dev
@@ -74,6 +74,56 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: cypress-screenshots
+          path: cypress/screenshots
+          retention-days: 14
+
+  security:
+    name: Security Tests
+    needs: lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Cache Cypress binary
+        uses: actions/cache@v6
+        with:
+          path: ~/.cache/Cypress
+          key: cypress-binary-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+      - run: npm ci
+
+      - name: Run Cypress (injeção, controle de acesso e autenticação)
+        run: npm run test:security
+        env:
+          CYPRESS_BASE_URL: https://front.serverest.dev
+          CYPRESS_API_URL: https://serverest.dev
+
+      - name: Upload security report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: security-report
+          path: mochawesome-report
+          retention-days: 14
+
+      - name: Upload security videos
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: security-videos
+          path: cypress/videos
+          retention-days: 14
+
+      - name: Upload security screenshots (failures)
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: security-screenshots
           path: cypress/screenshots
           retention-days: 14
 
