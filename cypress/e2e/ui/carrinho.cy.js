@@ -2,6 +2,7 @@ const HomePage = require('../../pages/HomePage');
 const CartPage = require('../../pages/CartPage');
 
 describe('UI - Lista de compras', () => {
+  const apiUrl = Cypress.env('apiUrl');
   let user;
   let admin;
   let adminToken;
@@ -33,10 +34,26 @@ describe('UI - Lista de compras', () => {
   });
 
   it('adiciona um produto pesquisado à lista de compras', () => {
+    cy.intercept('GET', `${apiUrl}/produtos`).as('listarProdutos');
+
     cy.loginBySession(user.email, user.password);
     cy.url().should('include', '/home');
 
+    cy.wait('@listarProdutos').then(({ response }) => {
+      expect(response.statusCode).to.eq(200);
+      expect(response.body.produtos).to.be.an('array');
+    });
+
+    cy.intercept('GET', `${apiUrl}/produtos?nome=*`).as('buscarProdutos');
     HomePage.search(product.nome);
+
+    cy.wait('@buscarProdutos').then(({ request, response }) => {
+      expect(request.query.nome).to.eq(product.nome);
+      expect(response.statusCode).to.eq(200);
+      expect(response.body.produtos).to.have.length(1);
+      expect(response.body.produtos[0]).to.include({ nome: product.nome, preco: product.preco });
+    });
+
     HomePage.getProductCardByName(product.nome).should('be.visible');
     HomePage.addProductToListByName(product.nome);
 
