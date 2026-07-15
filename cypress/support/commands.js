@@ -16,6 +16,19 @@ Cypress.Commands.add('apiCreateAdmin', (overrides = {}) => {
   return cy.apiCreateUser({ administrador: 'true', ...overrides });
 });
 
+/**
+ * Cria um usuário administrador e já autentica, retornando { admin, token } -
+ * evita repetir a cadeia "criar admin -> logar -> capturar authorization" em cada spec.
+ */
+Cypress.Commands.add('apiCreateAdminWithToken', (overrides = {}) => {
+  return cy.apiCreateAdmin(overrides).then((admin) =>
+    cy.apiLogin(admin.email, admin.password).then((response) => ({
+      admin,
+      token: response.body.authorization,
+    })),
+  );
+});
+
 Cypress.Commands.add('apiLogin', (email, password) => {
   return cy.request({
     method: 'POST',
@@ -65,6 +78,7 @@ Cypress.Commands.add('loginBySession', (email, password) => {
     email,
     () => {
       cy.apiLogin(email, password).then((response) => {
+        expect(response.status, 'apiLogin em loginBySession retornou sucesso').to.eq(200);
         cy.visit('/login');
         cy.window().then((win) => {
           win.localStorage.setItem('serverest/userEmail', email);
@@ -74,7 +88,10 @@ Cypress.Commands.add('loginBySession', (email, password) => {
     },
     {
       validate: () => {
-        cy.window().its('localStorage').invoke('getItem', 'serverest/userToken').should('exist');
+        cy.window()
+          .its('localStorage')
+          .invoke('getItem', 'serverest/userToken')
+          .should('match', /^Bearer .+/);
       },
     },
   );

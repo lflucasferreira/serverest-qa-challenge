@@ -1,20 +1,11 @@
 const { faker } = require('@faker-js/faker');
 const HomePage = require('../../pages/HomePage');
 const { TIMEOUTS } = require('../../support/@enums/timeouts');
+const { useTestUser } = require('../../support/utils/testLifecycle');
 
 describe('UI - Busca de produtos (estados de UI)', () => {
   const apiUrl = Cypress.env('apiUrl');
-  let user;
-
-  before(() => {
-    cy.apiCreateUser().then((createdUser) => {
-      user = createdUser;
-    });
-  });
-
-  after(() => {
-    cy.apiDeleteUser(user?._id);
-  });
+  const testUser = useTestUser();
 
   it(
     'exibe o indicador de carregamento enquanto a busca está em andamento',
@@ -26,7 +17,7 @@ describe('UI - Busca de produtos (estados de UI)', () => {
         });
       }).as('buscaLenta');
 
-      cy.loginBySession(user.email, user.password);
+      cy.loginBySession(testUser.user.email, testUser.user.password);
       HomePage.search('Logitech');
 
       HomePage.getLoadingIndicator().should('be.visible');
@@ -41,7 +32,7 @@ describe('UI - Busca de produtos (estados de UI)', () => {
     () => {
       const termoInexistente = faker.string.alphanumeric(20);
 
-      cy.loginBySession(user.email, user.password);
+      cy.loginBySession(testUser.user.email, testUser.user.password);
       HomePage.search(termoInexistente);
 
       HomePage.getEmptyStateMessage().should('be.visible');
