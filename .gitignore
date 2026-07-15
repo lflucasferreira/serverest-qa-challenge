@@ -1,0 +1,10 @@
+node_modules/
+cypress/videos/
+cypress/screenshots/
+cypress/downloads/
+mochawesome-report/
+.env
+.env.local
+npm-debug.log*
+.DS_Store
+*.log

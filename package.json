@@ -1,0 +1,30 @@
+{
+  "name": "serverest-qa-challenge",
+  "version": "1.0.0",
+  "description": "Suíte Cypress de testes E2E (frontend) e de API para a aplicação ServeRest, desenvolvida como desafio técnico.",
+  "main": "index.js",
+  "scripts": {
+    "cypress:open": "cypress open",
+    "test:ui": "cypress run --spec \"cypress/e2e/ui/**/*.cy.js\"",
+    "test:api": "cypress run --spec \"cypress/e2e/api/**/*.cy.js\"",
+    "test": "cypress run",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write ."
+  },
+  "keywords": ["cypress", "e2e", "api-testing", "serverest"],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@faker-js/faker": "^10.5.0",
+    "cypress": "^15.18.1",
+    "cypress-mochawesome-reporter": "^4.0.2",
+    "eslint": "^10.7.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-cypress": "^6.4.3",
+    "globals": "^17.7.0",
+    "prettier": "^3.9.5"
+  }
+}
