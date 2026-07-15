@@ -17,10 +17,11 @@ describe('UI - Login', () => {
   });
 
   it('efetua login com credenciais válidas e acessa a Home', { tags: '@smoke' }, () => {
+    cy.step('Preenche e submete o formulário de login');
     cy.intercept('POST', `${apiUrl}/login`).as('login');
-
     LoginPage.visit().login(user.email, user.password);
 
+    cy.step('Valida o payload enviado e a resposta da API');
     cy.wait('@login').then(({ request, response }) => {
       expect(request.headers['content-type']).to.include('application/json');
       expect(request.body).to.deep.equal({ email: user.email, password: user.password });
@@ -30,6 +31,7 @@ describe('UI - Login', () => {
       cy.validateJsonSchema(response.body, 'login-sucesso.schema.json');
     });
 
+    cy.step('Confirma o acesso autenticado à Home');
     cy.url().should('include', '/home');
     HomePage.getLogoutButton().should('be.visible');
     cy.contains('Produtos').should('be.visible');

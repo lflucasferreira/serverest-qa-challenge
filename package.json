@@ -23,7 +23,7 @@
     "serverest"
   ],
   "author": "",
-  "license": "ISC",
+  "license": "MIT",
   "type": "commonjs",
   "devDependencies": {
     "@bahmutov/cy-grep": "^3.0.4",
@@ -35,6 +35,7 @@
     "cypress": "^15.18.1",
     "cypress-axe": "^1.7.0",
     "cypress-mochawesome-reporter": "^4.0.2",
+    "cypress-plugin-steps": "^1.2.1",
     "eslint": "^10.7.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-cypress": "^6.4.3",

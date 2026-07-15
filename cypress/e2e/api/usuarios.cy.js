@@ -16,6 +16,7 @@ describe('API - Usuários', () => {
     () => {
       const user = buildUser();
 
+      cy.step('POST /usuarios e validação do contrato de sucesso');
       cy.request('POST', `${apiUrl}/usuarios`, user).then((response) => {
         expect(response.status).to.eq(HTTP_STATUS.CREATED);
         expect(response.duration).to.be.lessThan(TIMEOUTS.API_RESPONSE_SLA_MS);
@@ -24,6 +25,7 @@ describe('API - Usuários', () => {
 
         createdUserIds.push(response.body._id);
 
+        cy.step('GET /usuarios/:id para confirmar a persistência');
         cy.request('GET', `${apiUrl}/usuarios/${response.body._id}`).then((getResponse) => {
           expect(getResponse.status).to.eq(HTTP_STATUS.OK);
           expect(getResponse.body).to.include({

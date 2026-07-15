@@ -35,8 +35,8 @@ describe('UI - Lista de compras', () => {
   });
 
   it('adiciona um produto pesquisado à lista de compras', { tags: '@smoke' }, () => {
+    cy.step('Loga e confirma o carregamento da listagem de produtos');
     cy.intercept('GET', `${apiUrl}/produtos`).as('listarProdutos');
-
     cy.loginBySession(user.email, user.password);
     cy.url().should('include', '/home');
 
@@ -45,6 +45,7 @@ describe('UI - Lista de compras', () => {
       cy.validateJsonSchema(response.body, 'lista-produtos.schema.json');
     });
 
+    cy.step('Busca o produto criado para o teste');
     cy.intercept('GET', `${apiUrl}/produtos?nome=*`).as('buscarProdutos');
     HomePage.search(product.nome);
 
@@ -55,6 +56,7 @@ describe('UI - Lista de compras', () => {
       expect(response.body.produtos[0]).to.include({ nome: product.nome, preco: product.preco });
     });
 
+    cy.step('Adiciona o produto à lista de compras e confirma a quantidade');
     HomePage.getProductCardByName(product.nome).should('be.visible');
     HomePage.addProductToListByName(product.nome);
 

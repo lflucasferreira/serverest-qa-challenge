@@ -25,6 +25,7 @@ describe('API - Produtos (rota administrativa)', () => {
   });
 
   it('cadastra um produto com sucesso usando token de administrador', { tags: '@smoke' }, () => {
+    cy.step('POST /produtos autenticado como administrador');
     cy.apiCreateProduct(adminToken).then((product) => {
       expect(product.status).to.eq(HTTP_STATUS.CREATED);
       createdProductIds.push(product._id);
@@ -33,6 +34,7 @@ describe('API - Produtos (rota administrativa)', () => {
         'cadastro-sucesso.schema.json',
       );
 
+      cy.step('GET /produtos/:id para confirmar a persistência');
       cy.request('GET', `${apiUrl}/produtos/${product._id}`).then((getResponse) => {
         expect(getResponse.status).to.eq(HTTP_STATUS.OK);
         expect(getResponse.body).to.include({ nome: product.nome, preco: product.preco });

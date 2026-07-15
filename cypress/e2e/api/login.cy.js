@@ -16,6 +16,7 @@ describe('API - Login', () => {
   });
 
   it('autentica com sucesso e retorna um token de autorização', { tags: '@smoke' }, () => {
+    cy.step('POST /login e validação do contrato de sucesso');
     cy.request('POST', `${apiUrl}/login`, {
       email: user.email,
       password: user.password,

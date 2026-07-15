@@ -13,10 +13,12 @@ describe('UI - Cadastro de usuário', () => {
 
   it('cadastra um novo usuário com sucesso e acessa a Home autenticado', { tags: '@smoke' }, () => {
     const user = buildUser();
-    cy.intercept('POST', `${apiUrl}/usuarios`).as('cadastrarUsuario');
 
+    cy.step('Preenche e submete o formulário de cadastro');
+    cy.intercept('POST', `${apiUrl}/usuarios`).as('cadastrarUsuario');
     CadastroPage.visit().cadastrar(user);
 
+    cy.step('Valida o payload enviado e a resposta da API');
     cy.wait('@cadastrarUsuario').then(({ request, response }) => {
       expect(request.headers['content-type']).to.include('application/json');
       expect(request.body).to.deep.equal({
@@ -32,6 +34,7 @@ describe('UI - Cadastro de usuário', () => {
       createdUserIds.push(response.body._id);
     });
 
+    cy.step('Confirma que o usuário foi autenticado e redirecionado para a Home');
     cy.url().should('include', '/home');
     HomePage.getLogoutButton().should('be.visible');
     cy.window()

@@ -1,0 +1,11 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "lib": ["ES2020", "DOM"],
+    "types": ["cypress", "cypress-axe", "cypress-plugin-steps"],
+    "noEmit": true,
+    "allowJs": true,
+    "checkJs": false
+  },
+  "include": ["cypress/**/*.js", "cypress/**/*.d.ts", "cypress.config.js"]
+}
