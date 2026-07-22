@@ -34,7 +34,7 @@
     "ajv": "^8.20.0",
     "ajv-formats": "^3.0.1",
     "axe-core": "^4.12.1",
-    "cypress": "^15.18.1",
+    "cypress": "^15.19.0",
     "cypress-axe": "^1.7.0",
     "cypress-mochawesome-reporter": "^4.0.2",
     "cypress-plugin-steps": "^1.2.1",
